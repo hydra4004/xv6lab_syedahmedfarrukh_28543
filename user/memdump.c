@@ -4,7 +4,7 @@
 
 #define BUFSIZE 512
 
-void memdump(char *format, char *addr);
+void dumpmem(char *format, char *addr);
 
 int
 main(int argc, char *argv[])
@@ -13,98 +13,96 @@ main(int argc, char *argv[])
   int bytes_read;
 
   if (argc == 1) {
-    // Run demo cases if no format is passed
     printf("Demo 1:\n");
-    int nums[2] = {61810, 2025};
-    memdump("ii", (char*)nums);
+    int numbers[2] = {61810, 2025};
+    dumpmem("ii", (char*)numbers);
 
     printf("Demo 2:\n");
-    memdump("S", "a string");
+    dumpmem("S", "a string");
 
     printf("Demo 3:\n");
-    char *txt = "another";
-    memdump("s", (char*)&txt);
+    char *word = "another";
+    dumpmem("s", (char*)&word);
 
     struct sample {
-      char *pstr;
-      int value1;
-      short value2;
-      char onechar;
-      char text[8];
-    } record;
+      char *pointer;
+      int first;
+      short second;
+      char single;
+      char array[8];
+    } obj;
 
-    record.pstr = "hello";
-    record.value1 = 1819438967;
-    record.value2 = 100;
-    record.onechar = 'z';
-    strcpy(record.text, "xyzzy");
+    obj.pointer = "hello";
+    obj.first = 1819438967;
+    obj.second = 100;
+    obj.single = 'z';
+    strcpy(obj.array, "xyzzy");
 
     printf("Demo 4:\n");
-    memdump("pihcS", (char*)&record);
+    dumpmem("pihcS", (char*)&obj);
 
     printf("Demo 5:\n");
-    memdump("sccccc", (char*)&record);
+    dumpmem("sccccc", (char*)&obj);
 
     exit(0);
   }
 
-  // Use stdin if a format string is supplied
   char *format = argv[1];
   bytes_read = read(0, buffer, sizeof(buffer));
   if (bytes_read < 0) {
-    fprintf(2, "memdump: input read failed\n");
+    fprintf(2, "dumpmem: failed to read input\n");
     exit(1);
   }
-  memdump(format, buffer);
+  dumpmem(format, buffer);
   exit(0);
 }
 
 void
-memdump(char *format, char *addr)
+dumpmem(char *format, char *addr)
 {
   while (*format) {
     switch (*format) {
       case 'i': { // 32-bit int
-        int n32 = *(int*)addr;
-        printf("%d\n", n32);
+        int val32 = *(int*)addr;
+        printf("%d\n", val32);
         addr += sizeof(int);
         break;
       }
-      case 'p': { // 64-bit int (hex)
-        uint64 n64 = *(uint64*)addr;
-        printf("%lx\n", n64);
+      case 'p': { 
+        uint64 val64 = *(uint64*)addr;
+        printf("%lx\n", val64);
         addr += sizeof(uint64);
         break;
       }
-      case 'h': { // 16-bit int
-        short n16 = *(short*)addr;
-        printf("%d\n", n16);
+      case 'h': { 
+        short val16 = *(short*)addr;
+        printf("%d\n", val16);
         addr += sizeof(short);
         break;
       }
-      case 'c': { // single char
+      case 'c': { 
         char ch = *addr;
         printf("%c\n", ch);
         addr += sizeof(char);
         break;
       }
-      case 's': { // pointer to C-string
-        char *sp = *(char**)addr;
-        if (sp)
-          printf("%s\n", sp);
+      case 's': { 
+        char *sptr = *(char**)addr;
+        if (sptr)
+          printf("%s\n", sptr);
         else
           printf("(null)\n");
         addr += sizeof(char*);
         break;
       }
-      case 'S': { // inline C-string
+      case 'S': { 
         char *str = (char*)addr;
         printf("%s\n", str);
         addr += strlen(str) + 1;
         break;
       }
       default:
-        printf("Unknown format specifier: %c\n", *format);
+        printf("Unknown specifier: %c\n", *format);
         break;
     }
     format++;
