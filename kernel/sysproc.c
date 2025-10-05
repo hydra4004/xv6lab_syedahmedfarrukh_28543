@@ -105,3 +105,18 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+uint64
+sys_interpose(void)
+{
+    int mask;
+    char path[128];
+
+    // Fetch syscall arguments
+    argint(0, &mask);
+    argstr(1, path, sizeof(path));
+
+    struct proc *p = myproc();
+    p->mask = mask;  // store mask in proc struct
+
+    return 0;
+}
