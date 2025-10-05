@@ -273,6 +273,9 @@ kfork(void)
   }
   np->sz = p->sz;
   np->mask = p->mask;  // inherit syscall restrictions
+  np->mask = p->mask;
+  safestrcpy(np->allowed_path, p->allowed_path, MAXPATH);
+
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
 

@@ -133,21 +133,48 @@ static uint64 (*syscalls[])(void) = {
 void
 syscall(void)
 {
-    int num;
-    struct proc *p = myproc();
+  int num;
+  struct proc *p = myproc();
 
-    num = p->trapframe->a7;
-    if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
-        // Check if syscall is blocked by interpose()
-        if(p->mask & (1 << num)) {
-            
-           p->trapframe->a0 = -1; // return error to user
-	return;
-        } else {
-            p->trapframe->a0 = syscalls[num]();
+  // Get the syscall number from the trapframe
+  num = p->trapframe->a7;
+
+  // Check if it's a valid syscall number
+  if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
+    // ====== SANDBOX CHECK START ======
+    if (p->mask & (1 << num)) {
+      // Special handling for open and exec
+      if (num == SYS_open || num == SYS_exec) {
+        char path[MAXPATH];
+
+        // Try to read the first argument (the pathname)
+        if (argstr(0, path, sizeof(path)) < 0)
+          p->trapframe->a0 = -1;  // syscall return value
+        else {
+          // If pathname matches allowed_path, allow syscall
+          if (strncmp(path, p->allowed_path, MAXPATH) == 0) {
+            // allowed, do nothing
+          } else {
+            printf("sandbox: blocked syscall %d for %s\n", num, path);
+            p->trapframe->a0 = -1;
+            return;
+          }
         }
-    } else {
-        printf("%d %s: unknown sys call %d\n", p->pid, p->name, num);
+      } else {
+        // All other masked syscalls → block
+        printf("Process %d blocked syscall %d\n", p->pid, num);
         p->trapframe->a0 = -1;
+        return;
+      }
     }
+    // ====== SANDBOX CHECK END ======
+
+    // If not blocked, run the actual syscall
+    p->trapframe->a0 = syscalls[num]();
+  } else {
+    // Invalid syscall
+    printf("%d %s: unknown sys call %d\n",
+            p->pid, p->name, num);
+    p->trapframe->a0 = -1;
+  }
 }

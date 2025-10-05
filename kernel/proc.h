@@ -1,3 +1,4 @@
+#define MAXPATH 128
 // Saved registers for kernel context switches.
 struct context {
   uint64 ra;
@@ -98,11 +99,13 @@ struct proc {
   // these are private to the process, so p->lock need not be held.
   uint64 kstack;               // Virtual address of kernel stack
   uint64 sz;                   // Size of process memory (bytes)
+  uint64 mask;
+  char allowed_path[MAXPATH];
   pagetable_t pagetable;       // User page table
   struct trapframe *trapframe; // data page for trampoline.S
   struct context context;      // swtch() here to run process
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
-int mask;  // bitmask of disallowed syscalls
+
 };
