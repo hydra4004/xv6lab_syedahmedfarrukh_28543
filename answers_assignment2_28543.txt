@@ -1,0 +1,26 @@
+Syed Ahmed Farrukh
+28543
+
+Q2) Is there a way to eliminate the special TRAPFRAME page mapping in every user address
+space? For example, could uservec be modified to simply push the 32 user registers onto
+the kernel stack, or store them in the proc structure?
+
+A2) The TRAPFRAME mapping is required because when a trap occurs, the RISC-V CPU continues using the **user** page table—no page-table switch happens automatically. The first trap handler (`uservec`) executes under this user page table, so it must save the 32 registers to a location that is already mapped in user space.
+
+Kernel memory (such as the kernel stack or fields inside `proc`) is not mapped in the user page table, so trying to write registers there would cause a fault. The TRAPFRAME page, however, is mapped in both user and kernel page tables, ensuring these stores succeed until the kernel fully takes over.
+
+Thus, the special TRAPFRAME mapping is necessary so the trap handler can safely save state before switching to kernel mode.
+
+---
+
+Q3) Could xv6 be modified to eliminate the special TRAMPOLINE page mapping?
+
+A3) The TRAMPOLINE page is needed because the trap entry address in `stvec` must also be mapped in the user’s page table; otherwise, the CPU wouldn’t be able to jump to the trap handler at trap time.
+
+While xv6 *could* remove the TRAMPOLINE by mapping the entire kernel into every user page table with the user bit cleared (so the kernel code is present but inaccessible), this weakens isolation and increases security risks. xv6 avoids this design for simplicity and safety.
+
+Therefore, although technically possible, removing the TRAMPOLINE mapping is not desirable, and xv6 keeps a dedicated, dual-mapped TRAMPOLINE page instead.
+
+---
+
+
